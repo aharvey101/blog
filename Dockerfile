@@ -12,7 +12,7 @@ RUN cargo build --release
 # Expose port 8080
 EXPOSE 8080
 
-ENV BIND_ADDRESS="127.0.0.1:8080"
+ENV BIND_ADDRESS="0.0.0.0:8080"
 
 # Run the blog
 CMD ["./target/release/blog"]
