@@ -2,6 +2,7 @@ use pulldown_cmark::{html, Parser};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
+use tera::{Tera, Context};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct PostMetadata {
@@ -11,7 +12,7 @@ pub struct PostMetadata {
     pub tags: Option<Vec<String>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Post {
     pub metadata: PostMetadata,
     pub content: String,
@@ -21,6 +22,9 @@ pub struct Post {
 pub fn generate_site() -> Result<(), Box<dyn std::error::Error>> {
     println!("Generating static site...");
 
+    // Initialize Tera template engine
+    let tera = Tera::new("templates/**/*")?;
+
     // Create output directory
     fs::create_dir_all("output")?;
 
@@ -29,11 +33,11 @@ pub fn generate_site() -> Result<(), Box<dyn std::error::Error>> {
 
     // Generate individual post pages
     for post in &posts {
-        generate_post_page(post)?;
+        generate_post_page(post, &tera)?;
     }
 
     // Generate index page with post list
-    generate_index_page(&posts)?;
+    generate_index_page(&posts, &tera)?;
 
     // Copy static assets
     copy_static_files()?;
@@ -100,96 +104,20 @@ fn parse_post(content: String, path: &Path) -> Result<Post, Box<dyn std::error::
     })
 }
 
-fn generate_post_page(post: &Post) -> Result<(), Box<dyn std::error::Error>> {
-    let template = r#"<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{title} - My Blog</title>
-    <link rel="stylesheet" href="/style.css">
-</head>
-<body>
-    <header>
-        <nav>
-            <a href="/">← Back to Home</a>
-        </nav>
-    </header>
-    <main>
-        <article>
-            <h1>{title}</h1>
-            <p class="meta">Published on {date}{author}</p>
-            <div class="content">
-                {content}
-            </div>
-        </article>
-    </main>
-</body>
-</html>"#;
+fn generate_post_page(post: &Post, tera: &Tera) -> Result<(), Box<dyn std::error::Error>> {
+    let mut context = Context::new();
+    context.insert("post", post);
 
-    let author_text = match &post.metadata.author {
-        Some(author) => format!(" by {}", author),
-        None => String::new(),
-    };
-
-    let html = template
-        .replace("{title}", &post.metadata.title)
-        .replace("{date}", &post.metadata.date)
-        .replace("{author}", &author_text)
-        .replace("{content}", &post.content);
-
+    let html = tera.render("post.html", &context)?;
     fs::write(format!("output/{}.html", post.slug), html)?;
     Ok(())
 }
 
-fn generate_index_page(posts: &[Post]) -> Result<(), Box<dyn std::error::Error>> {
-    let mut posts_html = String::new();
+fn generate_index_page(posts: &[Post], tera: &Tera) -> Result<(), Box<dyn std::error::Error>> {
+    let mut context = Context::new();
+    context.insert("posts", posts);
 
-    if posts.is_empty() {
-        posts_html = r#"<div class="no-posts">
-            <p>No blog posts found. Create your first post in the <code>content/posts/</code> directory!</p>
-            <p>Example: <code>content/posts/2024-01-01-hello-world.md</code></p>
-        </div>"#.to_string();
-    } else {
-        for post in posts {
-            let author_text = match &post.metadata.author {
-                Some(author) => format!(" by {}", author),
-                None => String::new(),
-            };
-
-            posts_html.push_str(&format!(
-                r#"<article class="post-preview">
-                    <h2><a href="/{}.html">{}</a></h2>
-                    <p class="meta">{}{}</p>
-                </article>"#,
-                post.slug, post.metadata.title, post.metadata.date, author_text
-            ));
-        }
-    }
-
-    let template = r#"<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Rust Blog</title>
-    <link rel="stylesheet" href="/style.css">
-</head>
-<body>
-    <header>
-        <h1>My Rust Blog</h1>
-        <p class="subtitle">A simple static blog built with Rust</p>
-    </header>
-    <main>
-        {posts}
-    </main>
-    <footer>
-        <p>Generated with Rust 🦀</p>
-    </footer>
-</body>
-</html>"#;
-
-    let html = template.replace("{posts}", &posts_html);
+    let html = tera.render("index.html", &context)?;
     fs::write("output/index.html", html)?;
     Ok(())
 }
