@@ -7,7 +7,7 @@ tags: []
 
 # Building a Static Site Generator in Rust
 
-Today I want to share my experience building a simple static site generator using Rust. It's been a great learning project that combines several interesting concepts.
+Today I want to share my experience building a simple static site generator using Rust.
 
 ## Why Rust for Static Site Generation?
 
@@ -46,4 +46,4 @@ tags: ["tag1", "tag2"]
 ```
 
 ### Template System
-Simple string replacement for now, but could be extended with a proper templating engine.
+This uses Tera for templating

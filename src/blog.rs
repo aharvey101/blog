@@ -22,24 +22,18 @@ pub struct Post {
 pub fn generate_site() -> Result<(), Box<dyn std::error::Error>> {
     println!("Generating static site...");
 
-    // Initialize Tera template engine
     let tera = Tera::new("templates/**/*")?;
 
-    // Create output directory
     fs::create_dir_all("output")?;
 
-    // Read and process markdown files
     let posts = read_posts("content/posts")?;
 
-    // Generate individual post pages
     for post in &posts {
         generate_post_page(post, &tera)?;
     }
 
-    // Generate index page with post list
     generate_index_page(&posts, &tera)?;
 
-    // Copy static assets
     copy_static_files()?;
 
     println!(
