@@ -2,6 +2,7 @@ use std::fs;
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::path::Path;
+use tera::{Tera, Context};
 
 pub fn start_server(address: &str) -> std::io::Result<()> {
     let listener = TcpListener::bind(address)?;
@@ -62,7 +63,11 @@ fn serve_file(path: &str) -> String {
             )
         }
         Err(_) => {
-            let not_found = r#"<!DOCTYPE html>
+            let not_found = match render_404_page() {
+                Ok(html) => html,
+                Err(_) => {
+                    // Fallback HTML if template rendering fails
+                    r#"<!DOCTYPE html>
 <html>
 <head><title>404 Not Found</title></head>
 <body>
@@ -70,7 +75,9 @@ fn serve_file(path: &str) -> String {
 <p>The requested page could not be found.</p>
 <a href="/">← Back to Home</a>
 </body>
-</html>"#;
+</html>"#.to_string()
+                }
+            };
             format!(
                 "HTTP/1.1 404 NOT FOUND\r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}",
                 not_found.len(),
@@ -78,6 +85,12 @@ fn serve_file(path: &str) -> String {
             )
         }
     }
+}
+
+fn render_404_page() -> Result<String, Box<dyn std::error::Error>> {
+    let tera = Tera::new("templates/**/*")?;
+    let context = Context::new();
+    Ok(tera.render("404.html", &context)?)
 }
 
 fn get_content_type(path: &str) -> &'static str {
