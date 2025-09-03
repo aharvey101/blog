@@ -2,7 +2,7 @@
 title: "Building a Static Site Generator in Rust"
 date: "2025-09-02"
 author: "Alexander"
-tags: ["rust", "static-site", "web-development"]
+tags: []
 ---
 
 # Building a Static Site Generator in Rust
@@ -47,15 +47,3 @@ tags: ["tag1", "tag2"]
 
 ### Template System
 Simple string replacement for now, but could be extended with a proper templating engine.
-
-## What's Next?
-
-Future improvements could include:
-
-- [ ] Syntax highlighting for code blocks
-- [ ] RSS feed generation  
-- [ ] Tag pages
-- [ ] Better template system
-- [ ] Live reload during development
-
-This has been a fun project to work on, and I'm excited to keep improving it!
